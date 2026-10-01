@@ -1,0 +1,6 @@
+aiogram>=3.28,<4
+aiosqlite>=0.20
+matplotlib>=3.9
+python-dotenv>=1.0
+# Windows не содержит базы часовых поясов — без неё «сегодня» считается по UTC
+tzdata; sys_platform == "win32"

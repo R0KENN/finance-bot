@@ -1,0 +1,31 @@
+[Unit]
+Description=Finance Telegram Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__ROOT__
+ExecStart=__ROOT__/.venv/bin/python main.py
+
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONIOENCODING=utf-8
+
+# Бот сам поднимается после сбоя сети или перезагрузки сервера.
+Restart=always
+RestartSec=10
+
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+# SQLite завершает запись при обычном SIGTERM; времени на остановку хватает с запасом.
+KillSignal=SIGTERM
+TimeoutStopSec=20
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=finbot
+
+[Install]
+WantedBy=multi-user.target

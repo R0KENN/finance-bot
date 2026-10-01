@@ -1,0 +1,11 @@
+# Секреты и данные — только на машине владельца
+.env
+data/
+*.db
+*.db-wal
+*.db-shm
+
+__pycache__/
+*.pyc
+.venv/
+venv/
