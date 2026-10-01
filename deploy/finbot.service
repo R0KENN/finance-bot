@@ -3,6 +3,10 @@ Description=Finance Telegram Bot
 After=network-online.target
 Wants=network-online.target
 
+# Не больше 5 запусков за 5 минут, дальше systemd перестаёт перезапускать службу.
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
 [Service]
 Type=simple
 User=__USER__
@@ -15,9 +19,6 @@ Environment=PYTHONIOENCODING=utf-8
 # Бот сам поднимается после сбоя сети или перезагрузки сервера.
 Restart=always
 RestartSec=10
-
-StartLimitIntervalSec=300
-StartLimitBurst=5
 
 # SQLite завершает запись при обычном SIGTERM; времени на остановку хватает с запасом.
 KillSignal=SIGTERM
