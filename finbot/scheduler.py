@@ -11,7 +11,7 @@ from aiogram.exceptions import TelegramForbiddenError
 
 from .repos import Repos
 from .repos.users import Profile
-from .services import dates
+from .services import backup, dates
 from .services.mascot import with_mascot
 from .services.money import decimals_of, fmt, symbol_of
 from .ui.common import Screen, btn, kb, send
@@ -130,4 +130,8 @@ async def run(bot: Bot, repos: Repos, interval: float = 60) -> None:
             await tick(bot, repos)
         except Exception:  # noqa: BLE001
             log.exception("Сбой тика планировщика")
+        try:
+            await backup.tick(bot)
+        except Exception:  # noqa: BLE001
+            log.exception("Сбой отправки копии базы")
         await asyncio.sleep(interval)

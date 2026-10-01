@@ -15,6 +15,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"   # иначе find жалуется, если запустили из чужой папки (например, из /root)
 PYTHON="${PYTHON:-$ROOT/.venv/bin/python}"
 KEEP_DAYS="${KEEP_DAYS:-30}"
 

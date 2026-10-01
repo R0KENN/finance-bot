@@ -19,6 +19,11 @@ DEFAULT_TZ = os.getenv("TIMEZONE", "Europe/Moscow").strip()
 # Пусто — бот открыт для всех. Иначе только перечисленные Telegram id.
 ALLOWED_USERS = _ids(os.getenv("ALLOWED_USERS", ""))
 
+# Telegram id админа: каждые сутки бот присылает ему копию базы. Пусто — копии не шлются.
+ADMIN_ID = next(iter(_ids(os.getenv("ADMIN_ID", ""))), 0)
+# После какого часа (в TIMEZONE) слать копию.
+BACKUP_HOUR = min(23, max(0, int(os.getenv("BACKUP_HOUR", "4") or 4)))
+
 # off — не пробовать «Статьи» (Rich Messages), всегда слать обычным текстом.
 RICH_MESSAGES = os.getenv("RICH_MESSAGES", "auto").strip().lower() != "off"
 

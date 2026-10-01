@@ -6,9 +6,10 @@ from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
+from .. import config
 from ..repos import Repos
 from ..repos.users import Profile
-from ..services import dates
+from ..services import backup, dates
 from ..services.currency_switch import switch_base
 from ..services.mascot import with_mascot
 from ..services.money import CURRENCIES, FIAT, bar, pct
@@ -145,6 +146,17 @@ async def cmd_richtest(message: Message):
             "Бот продолжит работать: статьи будут приходить обычным текстом.")
         return
     await message.answer("✅ Статьи (Rich Messages) работают.")
+
+
+@router.message(Command("backup"), StateFilter("*"))
+async def cmd_backup(message: Message):
+    """Копия базы админу прямо сейчас. Остальным бот не отвечает: о команде им знать незачем."""
+    if not config.ADMIN_ID or message.from_user.id != config.ADMIN_ID:
+        return
+    try:
+        await backup.send_backup(message.bot, config.ADMIN_ID, config.DB_PATH, backup.today_stamp())
+    except Exception as error:  # noqa: BLE001 — причину показываем админу, а не прячем в журнале
+        await message.answer(f"❌ Копия не отправлена: <code>{esc(error)}</code>")
 
 
 @router.message(Command("help"), StateFilter("*"))
