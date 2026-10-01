@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any, Awaitable, Callable
 
 from aiogram import BaseMiddleware
@@ -59,3 +60,58 @@ class CallbackAnswerMiddleware(BaseMiddleware):
         except TelegramAPIError:
             pass  # хэндлер уже ответил с подсказкой, или запрос устарел
         return result
+
+
+class ThrottleMiddleware(BaseMiddleware):
+    """Антиспам: у каждого пользователя своё «ведро» запросов, до обращения к базе.
+
+    Ёмкость даёт обычный всплеск (быстрые тапы по кнопкам), пополнение — устойчивый темп.
+    Лишние обновления молча отбрасываются; о лимите пишем не чаще раза в NOTICE_EVERY секунд.
+    """
+
+    CAPACITY = 12.0
+    REFILL_PER_SEC = 2.0
+    NOTICE_EVERY = 10.0
+    PRUNE_ABOVE = 10_000
+
+    def __init__(self) -> None:
+        self._buckets: dict[int, list[float]] = {}  # user_id -> [токены, время, когда предупреждали]
+
+    def _allow(self, user_id: int, now: float) -> tuple[bool, bool]:
+        bucket = self._buckets.get(user_id)
+        if bucket is None:
+            if len(self._buckets) > self.PRUNE_ABOVE:
+                self._prune(now)
+            bucket = self._buckets[user_id] = [self.CAPACITY, now, float("-inf")]
+        tokens = min(self.CAPACITY, bucket[0] + (now - bucket[1]) * self.REFILL_PER_SEC)
+        bucket[1] = now
+        if tokens >= 1.0:
+            bucket[0] = tokens - 1.0
+            return True, False
+        bucket[0] = tokens
+        notify = now - bucket[2] >= self.NOTICE_EVERY
+        if notify:
+            bucket[2] = now
+        return False, notify
+
+    def _prune(self, now: float) -> None:
+        full_after = self.CAPACITY / self.REFILL_PER_SEC
+        stale = [uid for uid, b in self._buckets.items() if now - b[1] > full_after]
+        for uid in stale:
+            del self._buckets[uid]
+
+    async def __call__(self, handler, event: TelegramObject, data: dict[str, Any]) -> Any:
+        user = data.get("event_from_user")
+        if user is None:
+            return await handler(event, data)
+        allowed, notify = self._allow(user.id, time.monotonic())
+        if allowed:
+            return await handler(event, data)
+        try:
+            if isinstance(event, CallbackQuery):
+                await event.answer("Слишком быстро, чуть помедленнее." if notify else None)
+            elif isinstance(event, Message) and notify:
+                await event.answer("⏳ Слишком много запросов, подожди пару секунд.")
+        except TelegramAPIError:
+            pass
+        return None

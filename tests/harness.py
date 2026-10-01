@@ -264,7 +264,7 @@ class Harness:
         session = FakeSession()
         bot = Bot("123456:TEST-TOKEN", session=session,
                   default=DefaultBotProperties(parse_mode=ParseMode.HTML, link_preview_is_disabled=True))
-        return cls(db=db, repos=repos, session=session, bot=bot, dp=build_dispatcher(repos))
+        return cls(db=db, repos=repos, session=session, bot=bot, dp=build_dispatcher(repos, rate_limit=False))
 
     def client(self, user_id: int = 1, name: str = "Тест") -> Client:
         if user_id not in self.clients:

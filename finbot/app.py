@@ -8,19 +8,23 @@ from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import ErrorEvent
 
 from .handlers import build_router
-from .middlewares import CallbackAnswerMiddleware, UserMiddleware
+from .middlewares import CallbackAnswerMiddleware, ThrottleMiddleware, UserMiddleware
 from .repos import Repos
 
 log = logging.getLogger(__name__)
 
 
-def build_dispatcher(repos: Repos) -> Dispatcher:
+def build_dispatcher(repos: Repos, *, rate_limit: bool = True) -> Dispatcher:
     dp = Dispatcher(storage=MemoryStorage())
     dp.workflow_data["repos"] = repos
 
     # Бот личный: в группах молчим
     dp.message.filter(F.chat.type == "private")
 
+    if rate_limit:
+        throttle = ThrottleMiddleware()  # один на оба типа событий: лимит общий на пользователя
+        dp.message.outer_middleware(throttle)
+        dp.callback_query.outer_middleware(throttle)
     dp.message.outer_middleware(UserMiddleware(repos))
     dp.callback_query.outer_middleware(UserMiddleware(repos))
     dp.callback_query.middleware(CallbackAnswerMiddleware())
